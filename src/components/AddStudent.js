@@ -9,31 +9,67 @@ import TextField from '@material-ui/core/TextField';
 
 // properties addStudent is required, function called when Add clicked.
 class AddStudent extends Component {
-      constructor(props) {
-      super(props);
-      this.state = {studentname:'',studentemail:''};
+		constructor(props) {
+		super(props);
+		this.state = {studentname:'',
+						studentemail:'',
+						validationColor:"primary",
+						nameColor:"primary",
+						emailColor:"primary"};
     };
     
     handleClickOpen = () => {
-      this.setState( {open:true} );
+		this.setState( {open:true} );
     };
 
     handleClose = () => {
-      this.setState( {open:false} );
+		this.setState( {open:false} );
     };
 
     handleChangeName = (event) => {
-      this.setState({studentname: event.target.value});
+		this.setState({studentname: event.target.value});
+		if (!(event.target.value.length >= 3)) {
+			this.setState({nameColor: "secondary"});
+			if (!this.state.studentemail.includes('@')) {
+    			this.setState({validationColor: "secondary"});
+			}
+		}
+		else {
+			this.setState({nameColor: "primary"});
+			
+			if (this.state.studentemail.includes('@')) {
+    			this.setState({validationColor: "primary"});
+			}
+		}
     }
     
 	handleChangeEmail = (event) => {
-      this.setState({studentemail: event.target.value});
+		this.setState({studentemail: event.target.value});
+		if (!event.target.value.includes('@')) {
+			this.setState({emailColor: "secondary"});
+			
+			if (!(this.state.studentname.length >= 3)) {
+    			this.setState({validationColor: "secondary"});
+			}
+		}
+		else {
+			this.setState({emailColor: "primary"});
+			
+			if (this.state.studentname.length >= 3) {
+    			this.setState({validationColor: "primary"});
+			}
+		}
     }
 
   // Save student and close modal form
     handleAdd = () => {
-       this.props.addStudent(this.state.studentname, this.state.studentemail);
-       this.handleClose();
+    	if ((!(this.state.studentname.length >= 3)) || (!this.state.studentemail.includes('@'))) {
+    		this.setState({validationColor: "secondary"});
+    	} else {
+    		this.setState({buttonColor: "primary"});
+			this.props.addStudent(this.state.studentname, this.state.studentemail);
+			this.handleClose();
+		}
     }
 
     render()  { 
@@ -45,12 +81,12 @@ class AddStudent extends Component {
             <Dialog open={this.state.open} onClose={this.handleClose}>
                 <DialogTitle>Add Student</DialogTitle>
                 <DialogContent>
-                  <TextField autoFocus fullWidth label="Name" name="name" onChange={this.handleChangeName}/>
-                  <TextField autoFocus fullWidth label="Email" name="email" onChange={this.handleChangeEmail}/>
+                  <TextField autoFocus fullWidth color={this.state.nameColor} label="Name" name="name" onChange={this.handleChangeName}/>
+                  <TextField autoFocus fullWidth color={this.state.emailColor} label="Email" name="email" onChange={this.handleChangeEmail}/>
                 </DialogContent>
                 <DialogActions>
                   <Button color="secondary" onClick={this.handleClose}>Cancel</Button>
-                  <Button color="primary" onClick={this.handleAdd}>Add</Button>
+                  <Button color={this.state.validationColor} onClick={this.handleAdd}>Add</Button>
                 </DialogActions>
               </Dialog>      
           </div>
