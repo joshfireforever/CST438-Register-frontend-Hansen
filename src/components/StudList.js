@@ -27,9 +27,42 @@ class StudList extends Component {
 			name: '',
 			email: '',
 			statusCode: -1,
-			status: ''
+			status: '',
+			isAdmin: false
 		};
-	}; 
+	};
+	
+	componentDidMount() {
+		this.adminCheck();
+	}
+	
+	adminCheck = () => {
+		console.log("adminCheck");
+		const token = Cookies.get('XSRF-TOKEN');
+	
+		fetch(`${SERVER_URL}/admincheck`, 
+		  {  
+			method: 'GET', 
+			headers: { 'X-XSRF-TOKEN': token }, 
+			credentials: 'include'
+		  } )
+		.then((response) => {
+		  console.log("FETCH RESP:"+response);
+		  return response.json();
+		}) 
+		.then((responseData) => { 
+		  console.log("responseData: " + responseData);
+		  this.setState({ 
+			  isAdmin: responseData,
+		  });       
+		})
+		.catch(err => {
+		  toast.error("Unable to check for admin privileges.", {
+			  position: toast.POSITION.BOTTOM_LEFT
+			});
+			console.error(err); 
+		})
+	}
   
 	// Add student
 	addStudent = (name, email) => {
@@ -41,27 +74,25 @@ class StudList extends Component {
 			method: 'POST', 
 			headers: { 'Content-Type': 'application/json',
 				'X-XSRF-TOKEN': token  }, 
+       		credentials: 'include' 
 		})
 	    .then((response) => {
 			return response.json();}) 
 	    .then((responseData) => { 
-			this.setState(responseData);   
-	    })
-		.then(res => {
-			if (this.state.statusCode != -1) {
+			if (responseData.status == 0) {
 				toast.success("Student successfully added", {
 					position: toast.POSITION.BOTTOM_LEFT
 				});
-			if (this.state.status == null) {
-				this.setState({status: "No hold"});}
+				this.setState(responseData); 
+				if (this.state.status == null) {
+				 this.setState({status: "No hold"});}
 	        } else {
-				toast.error("Failed to add student", {
+				toast.error("Failed to add student or already in database.", {
 					position: toast.POSITION.BOTTOM_LEFT });
-				console.error('Post http status =' + res.status);
-	        }
-		})
+	        } 
+	    })
 	    .catch(err => {
-			toast.error("Error when adding", {
+			toast.error("An error occurred.", {
 				position: toast.POSITION.BOTTOM_LEFT });
 			console.error(err);
 		})
@@ -83,7 +114,7 @@ class StudList extends Component {
 				id: 0
 			}];
 	  
-		if (this.state.statusCode == -1) {
+		if ((this.state.statusCode == -1) && (this.state.isAdmin == true)) {
 			return(
 				<div>
 					<AppBar position="static" color="default">
@@ -106,7 +137,7 @@ class StudList extends Component {
 					</div>
 				</div>
 			);
-		} else {
+		} else if ((this.state.isAdmin == true)) {
 			return(
 				<div>
 					<AppBar position="static" color="default">
@@ -127,6 +158,18 @@ class StudList extends Component {
 						</div>
 						<ToastContainer autoClose={1500} />   
 					</div>
+				</div>
+			);
+		} else {
+			return(
+				<div>
+					<AppBar position="static" color="default">
+						<Toolbar>
+							<Typography variant="h6" color="inherit">
+								{ 'No access ' }
+							</Typography>
+						</Toolbar>
+					</AppBar>
 				</div>
 			);
 		}

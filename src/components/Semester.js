@@ -7,17 +7,84 @@ import Button from '@material-ui/core/Button';
 import Radio from '@material-ui/core/Radio';
 import {DataGrid} from '@material-ui/data-grid';
 import {SEMESTER_LIST} from '../constants.js'
+import {SERVER_URL} from '../constants.js'
+
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Cookies from 'js-cookie';
+import Grid from '@material-ui/core/Grid';
 
 // user selects from a list of  (year, semester) values
 class Semester extends Component {
     constructor(props) {
       super(props);
-      this.state = {selected: SEMESTER_LIST.length-1 };
+      this.state = {selected: SEMESTER_LIST.length-1, isAdmin: false, isStudent: false };
     }
  
    onRadioClick = (event) => {
     console.log("Semester.onRadioClick "+JSON.stringify(event.target.value));
     this.setState({selected: event.target.value});
+  }
+  
+  componentDidMount() {
+    this.studentCheck();
+    this.adminCheck();
+  }
+	
+  studentCheck = () => {
+		console.log("studentCheck");
+		const token = Cookies.get('XSRF-TOKEN');
+	
+		fetch(`${SERVER_URL}/studentcheck`, 
+		  {  
+			method: 'GET', 
+			headers: { 'X-XSRF-TOKEN': token }, 
+			credentials: 'include'
+		  } )
+		.then((response) => {
+		  console.log("FETCH RESP:"+response);
+		  return response.json();
+		}) 
+		.then((responseData) => { 
+		  console.log("responseData: " + responseData);
+		  this.setState({ 
+			  isStudent: responseData,
+		  });       
+		})
+		.catch(err => {
+		  toast.error("Unable to check for student status.", {
+			  position: toast.POSITION.BOTTOM_LEFT
+			});
+			console.error(err); 
+		})
+	}
+  
+  adminCheck = () => {
+    console.log("adminCheck");
+    const token = Cookies.get('XSRF-TOKEN');
+    
+    fetch(`${SERVER_URL}/admincheck`, 
+      {  
+        method: 'GET', 
+        headers: { 'X-XSRF-TOKEN': token }, 
+        credentials: 'include'
+      } )
+    .then((response) => {
+      console.log("FETCH RESP:"+response);
+	  return response.json();
+    }) 
+    .then((responseData) => { 
+      console.log("responseData: " + responseData);
+      this.setState({ 
+          isAdmin: responseData,
+      });       
+    })
+    .catch(err => {
+      toast.error("Unable to check for admin privileges.", {
+          position: toast.POSITION.BOTTOM_LEFT
+        });
+        console.error(err); 
+    })
   }
   
   render() {    
@@ -54,19 +121,23 @@ class Semester extends Component {
          <div align="left" >
               <div style={{ height: 400, width: '100%', align:"left"   }}>
                 <DataGrid   rows={SEMESTER_LIST} columns={icolumns} />
-              </div>                
-              <Button component={Link} 
+              </div>   
+            {this.state.isStudent
+                ? <Button component={Link} 
                       to={{pathname:'/schedule' , 
                       year:SEMESTER_LIST[this.state.selected].year, 
                       semester:SEMESTER_LIST[this.state.selected].name}} 
-                variant="outlined" color="primary" style={{margin: 10}}>
-                Get Schedule
-              </Button>
-            <Button component={Link} 
-                      to={{pathname:'/student'}} 
-                variant="outlined" color="primary" style={{margin: 10}}>
-                Students
-            </Button>
+					  variant="outlined" color="primary"
+					  style={{margin: 10}}>
+                	Get Schedule</Button>
+				: ''
+			  }  
+              {this.state.isAdmin
+                ? <Button component={Link} 
+					  to={{pathname:'/student'}} 
+					  variant="outlined" color="primary" style={{margin: 10}}>Students</Button>
+				: ''
+			  }   
           </div>
       </div>
     )

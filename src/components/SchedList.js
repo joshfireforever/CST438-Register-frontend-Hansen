@@ -24,12 +24,41 @@ import AddCourse from './AddCourse';
 class SchedList extends Component {
   constructor(props) {
     super(props);
-    this.state = { courses: [] };
+    this.state = { courses: [], isStudent: false};
   } 
   
   componentDidMount() {
     this.fetchCourses();
+    this.studentCheck();
   }
+	
+  studentCheck = () => {
+		console.log("studentCheck");
+		const token = Cookies.get('XSRF-TOKEN');
+	
+		fetch(`${SERVER_URL}/studentcheck`, 
+		  {  
+			method: 'GET', 
+			headers: { 'X-XSRF-TOKEN': token }, 
+			credentials: 'include'
+		  } )
+		.then((response) => {
+		  console.log("FETCH RESP:"+response);
+		  return response.json();
+		}) 
+		.then((responseData) => { 
+		  console.log("responseData: " + responseData);
+		  this.setState({ 
+			  isStudent: responseData,
+		  });       
+		})
+		.catch(err => {
+		  toast.error("Unable to check for student status.", {
+			  position: toast.POSITION.BOTTOM_LEFT
+			});
+			console.error(err); 
+		})
+	}
   
   fetchCourses = () => {
     console.log("SchedList.fetchCourses");
@@ -38,7 +67,8 @@ class SchedList extends Component {
     fetch(`${SERVER_URL}/schedule?year=${this.props.location.year}&semester=${this.props.location.semester}`, 
       {  
         method: 'GET', 
-        headers: { 'X-XSRF-TOKEN': token }
+        headers: { 'X-XSRF-TOKEN': token }, 
+        credentials: 'include'
       } )
     .then((response) => {
       console.log("FETCH RESP:"+response);
@@ -71,7 +101,8 @@ class SchedList extends Component {
       fetch(`${SERVER_URL}/schedule/${id}`,
         {
           method: 'DELETE',
-          headers: { 'X-XSRF-TOKEN': token }
+          headers: { 'X-XSRF-TOKEN': token }, 
+          credentials: 'include'
         })
     .then(res => {
         if (res.ok) {
@@ -103,7 +134,9 @@ class SchedList extends Component {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json',
                    'X-XSRF-TOKEN': token  }, 
+        credentials: 'include', 
         body: JSON.stringify(course)
+        
       })
     .then(res => {
         if (res.ok) {
@@ -151,29 +184,42 @@ class SchedList extends Component {
         )
       }
       ];
-  
-  return(
-      <div>
-          <AppBar position="static" color="default">
-            <Toolbar>
-               <Typography variant="h6" color="inherit">
-                  { 'Schedule ' + this.props.location.year + ' ' +this.props.location.semester }
-                </Typography>
-            </Toolbar>
-          </AppBar>
-          <div className="App">
-            <Grid container>
-              <Grid item>
-                  <AddCourse addCourse={this.addCourse}  />
-              </Grid>
-            </Grid>
-            <div style={{ height: 400, width: '100%' }}>
-              <DataGrid rows={this.state.courses} columns={columns} />
-            </div>
-            <ToastContainer autoClose={1500} />   
-          </div>
-      </div>
-      ); 
+   if (this.state.isStudent) {
+	  return(
+		  <div>
+			  <AppBar position="static" color="default">
+				<Toolbar>
+				   <Typography variant="h6" color="inherit">
+					  { 'Schedule ' + this.props.location.year + ' ' +this.props.location.semester }
+					</Typography>
+				</Toolbar>
+			  </AppBar>
+			  <div className="App">
+				<Grid container>
+				  <Grid item>
+					  <AddCourse addCourse={this.addCourse}  />
+				  </Grid>
+				</Grid>
+				<div style={{ height: 400, width: '100%' }}>
+				  <DataGrid rows={this.state.courses} columns={columns} />
+				</div>
+				<ToastContainer autoClose={1500} />   
+			  </div>
+		  </div>
+		); 
+	} else {
+	  return(
+		  <div>
+			  <AppBar position="static" color="default">
+				<Toolbar>
+				   <Typography variant="h6" color="inherit">
+					  { 'No access' }
+					</Typography>
+				</Toolbar>
+			  </AppBar>
+		  </div>
+		);
+	}
   }
 }
 
